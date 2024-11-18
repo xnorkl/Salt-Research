@@ -35,3 +35,25 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# Ignore environment files
+.env
+.env.*
+!.env.example
+
+# Salt-Stack specific ignores
+*.pyc
+*.pyo
+__pycache__/
+.pytest_cache/
+.cache/
+.salt-rewrite-cache/
+.coverage
+.nox/
+.kitchen/
+.kitchen.local.yml
+.vagrant/
+*.swp
+*.swo
+*~
+.DS_Store
