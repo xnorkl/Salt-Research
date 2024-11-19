@@ -54,4 +54,14 @@ variable "tags" {
   type        = map(string)
   description = "Tags to apply to resources"
   default     = {}
+}
+
+variable "key_vault_name" {
+  type        = string
+  description = "Name of the Azure Key Vault containing terraform secrets"
+}
+
+variable "key_vault_resource_group" {
+  type        = string
+  description = "Resource group containing the Azure Key Vault"
 } 
