@@ -3,6 +3,11 @@ admin_group:
     - name: admin
     - system: False
 
+sudo_group:
+  group.present:
+    - name: sudo
+    - system: False
+
 admin_user:
   user.present:
     - name: admin

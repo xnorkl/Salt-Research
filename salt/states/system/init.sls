@@ -6,7 +6,17 @@ timezone:
   timezone.system:
     - name: UTC
 
-hostname_config:
-  network.system:
-    - enabled: True
-    - hostname: {{ grains['id'] }} 
+set_hostname:
+  host.present:
+    - ip: 127.0.0.1
+    - names:
+      - {{ grains['id'] }}
+      - localhost
+
+write_hostname:
+  file.managed:
+    - name: /etc/hostname
+    - contents: {{ grains['id'] }}
+  cmd.run:
+    - name: hostname {{ grains['id'] }}
+    - unless: test "$(hostname)" = "{{ grains['id'] }}"

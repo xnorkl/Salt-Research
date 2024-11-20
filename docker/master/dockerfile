@@ -22,7 +22,9 @@ RUN apt-get update && \
     salt-ssh=3006.9 \
     salt-syndic=3006.9 \
     salt-cloud=3006.9 \
-    salt-api=3006.9 && \
+    salt-api=3006.9 \
+    python3-pip && \
+    pip3 install azure-storage-file-share && \
     rm -rf /var/lib/apt/lists/*
 
 COPY salt/master/master.conf /etc/salt/master

@@ -8,16 +8,25 @@ services:
       - "4505:4505"  # Salt master publish port
       - "4506:4506"  # Salt master return port
     volumes:
+      - ./salt/pillar:/srv/pillar  # Mount salt pillar directory
       - ./salt/states:/srv/salt  # Mount salt states directory
     networks:
       salt_network:
         aliases:
           - salt-master
+    env_file:
+      - .env
 
   salt-minion:
     image: saltstack/salt:latest  # Using official Salt image
     hostname: minion
-    command: ["salt-minion"]
+    command: >
+      sh -c "
+        apk add --no-cache shadow sudo tzdata &&
+        cp /usr/share/zoneinfo/UTC /etc/localtime &&
+        echo 'UTC' > /etc/timezone &&
+        salt-minion -l debug
+      "
     depends_on:
       - salt-master
     environment:
