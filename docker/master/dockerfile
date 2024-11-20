@@ -23,11 +23,32 @@ RUN apt-get update && \
     salt-syndic=3006.9 \
     salt-cloud=3006.9 \
     salt-api=3006.9 \
-    python3-pip && \
+    python3-pip \
+    python3-cherrypy3 \
+    apache2-utils && \
     pip3 install azure-storage-file-share && \
     rm -rf /var/lib/apt/lists/*
 
+# Create SSL certificates for salt-api
+RUN mkdir -p /etc/pki/tls/certs && \
+    mkdir -p /etc/pki/tls/private && \
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/pki/tls/private/localhost.key \
+    -out /etc/pki/tls/certs/localhost.crt \
+    -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
+
+# Create salt-api user
+RUN useradd -rs /bin/false saltapi && \
+    echo "saltapi:password" | chpasswd
+
+# Copy configuration files
 COPY salt/master/master.conf /etc/salt/master
+COPY salt/master/files/api.conf /etc/salt/master.d/api.conf
+
+# Update CMD to start both salt-master and salt-api
+COPY docker/master/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 
 EXPOSE 4505 4506
 
