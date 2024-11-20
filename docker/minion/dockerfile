@@ -1,0 +1,37 @@
+FROM ubuntu:22.04
+
+# Create non-root user
+RUN useradd -r -s /bin/false saltuser
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# Install dependencies
+RUN apt-get update && apt-get install -y curl sudo build-essential supervisor
+
+# Salt deps
+RUN mkdir -p /etc/apt/keyrings
+RUN curl -fsSL https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public | tee /etc/apt/keyrings/salt-archive-keyring.pgp
+RUN curl -fsSL https://github.com/saltstack/salt-install-guide/releases/latest/download/salt.sources | tee /etc/apt/sources.list.d/salt.sources
+
+# do we actually want to pin the version?
+RUN sh -c "\
+    echo 'Package: salt-*' > /etc/apt/preferences.d/salt-pin-1001 && \
+    echo 'Pin: version 3006.*' >> /etc/apt/preferences.d/salt-pin-1001 && \
+    echo 'Pin-Priority: 1001' >> /etc/apt/preferences.d/salt-pin-1001"
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends salt-common=3006.9 \
+    salt-minion=3006.9 \
+    salt-ssh=3006.9 \
+    salt-syndic=3006.9 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Switch to non-root user
+USER saltuser
+
+COPY salt/minion/* /etc/salt/minion
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD pgrep salt-minion || exit 1
+
+CMD ["salt-minion", "-l", "debug"]

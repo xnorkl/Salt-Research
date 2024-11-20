@@ -1,0 +1,34 @@
+services:
+  salt-master:
+    build:
+      context: .
+      dockerfile: docker/master/dockerfile
+    hostname: master
+    ports:
+      - "4505:4505"  # Salt master publish port
+      - "4506:4506"  # Salt master return port
+    volumes:
+      - ./salt/states:/srv/salt  # Mount salt states directory
+    networks:
+      salt_network:
+        aliases:
+          - salt-master
+
+  salt-minion:
+    image: saltstack/salt:latest  # Using official Salt image
+    hostname: minion
+    command: ["salt-minion"]
+    depends_on:
+      - salt-master
+    environment:
+      - SALT_MASTER=salt-master  # Point to master service
+    volumes:
+      - ./salt/minion:/etc/salt/minion.d  # Mount minion config directory
+    networks:
+      salt_network:
+        aliases:
+          - salt-minion
+
+networks:
+  salt_network:
+    driver: bridge 
