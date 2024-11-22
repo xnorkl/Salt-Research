@@ -7,6 +7,7 @@ services:
     ports:
       - "4505:4505"  # Salt master publish port
       - "4506:4506"  # Salt master return port
+      - "8000:8000"  # Salt API port
     volumes:
       - ./salt/pillar:/srv/pillar  # Mount salt pillar directory
       - ./salt/states:/srv/salt  # Mount salt states directory
