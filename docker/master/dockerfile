@@ -1,9 +1,10 @@
+# Dockerfile for Salt Master
 FROM ubuntu:22.04
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install dependencies
-RUN apt-get update && apt-get install -y curl sudo build-essential supervisor
+RUN apt-get update && apt-get install -y curl sudo build-essential
 
 # Salt deps
 RUN mkdir -p /etc/apt/keyrings
@@ -23,36 +24,33 @@ RUN apt-get update && \
     salt-syndic=3006.9 \
     salt-cloud=3006.9 \
     salt-api=3006.9 \
-    python3-pip \
-    python3-cherrypy3 \
-    apache2-utils && \
-    pip3 install azure-storage-file-share && \
-    rm -rf /var/lib/apt/lists/*
+    libpam0g \
+    python3-pam \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create SSL certificates for salt-api
-RUN mkdir -p /etc/pki/tls/certs && \
-    mkdir -p /etc/pki/tls/private && \
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-    -keyout /etc/pki/tls/private/localhost.key \
-    -out /etc/pki/tls/certs/localhost.crt \
-    -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
-
-# Create salt-api user
-RUN useradd -rs /bin/false saltapi && \
-    echo "saltapi:password" | chpasswd
+# Set up salt-api user with proper permissions
+RUN useradd -m -s /bin/bash saltapi && \
+    echo "saltapi:saltapi" | chpasswd && \
+    usermod -aG sudo saltapi
 
 # Copy configuration files
 COPY salt/master/master.conf /etc/salt/master
-COPY salt/master/files/api.conf /etc/salt/master.d/api.conf
+COPY salt/master/configs/api.conf /etc/salt/master.d/api.conf
+COPY salt/master/configs/salt /etc/pam.d/salt
 
-# Update CMD to start both salt-master and salt-api
-COPY docker/master/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# Ensure proper permissions
+RUN chmod 644 /etc/pam.d/salt && \
+    chown root:root /etc/pam.d/salt
 
-CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
-
-EXPOSE 4505 4506
+# Expose ports for event bus
+EXPOSE 4505 4506 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD salt-run manage.status || exit 1
 
-CMD ["salt-master", "-l", "debug"]
+# Copy systemd service files
+COPY salt/master/configs/systemd/salt-master.service /etc/systemd/system/
+COPY salt/master/configs/systemd/salt-api.service /etc/systemd/system/
+
+# Change CMD to start services
+CMD salt-master 

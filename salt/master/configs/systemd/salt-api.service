@@ -1,0 +1,15 @@
+[Unit]
+Description=The Salt API
+Documentation=man:salt-api(1) file:///usr/share/doc/salt/html/contents.html https://docs.saltproject.io/en/latest/contents.html
+After=salt-master.service
+BindsTo=salt-master.service
+
+[Service]
+Type=notify
+NotifyAccess=all
+ExecStart=/usr/bin/salt-api -l debug
+TimeoutStartSec=10
+Restart=always
+
+[Install]
+WantedBy=multi-user.target 
